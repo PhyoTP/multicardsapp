@@ -1,0 +1,195 @@
+import SwiftUI
+
+struct LibraryView: View{
+    @Environment(UserManager.self) var userManager: UserManager
+    @Environment(LocalSetsManager.self) var localSetsManager: LocalSetsManager
+    @Environment(SetsManager.self) var setsManager: SetsManager
+    @State private var showSheet = false
+    var covers: [SetCover]{
+        var result = [SetCover]()
+        if input.isEmpty{
+            result = localSetsManager.localSets.map{SetCover(id: $0.id, name: $0.name, creator: $0.creator, cardCount: $0.cards.count, tags: $0.safeTags)}
+        }else{
+            result = localSetsManager.localSets.map{SetCover(id: $0.id, name: $0.name, creator: $0.creator, cardCount: $0.cards.count, tags: $0.safeTags)}.filter{$0.name.lowercased().contains(input.lowercased())}
+        }
+        if !filterTags.isEmpty{
+            result = result.filter({$0.tags.isSuperset(of: filterTags)})
+        }
+        return result
+    }
+    @State private var input = ""
+    @State private var filterTags: Set<String> = []
+    @AppStorage("username") var name: String = "You"
+    var body: some View{
+        NavigationStack{
+            List{
+                Section("Sets"){
+                    if localSetsManager.localSets.isEmpty{
+                        Text("No sets yet, create or favourite one!")
+                            .foregroundStyle(.secondary)
+                    }else if covers.isEmpty{
+                        Text("Set not found")
+                            .foregroundStyle(.secondary)
+                    }
+                    ForEach(covers){ set in
+                        RedirectSetView(set: set)
+                    }
+                    .onDelete(perform: { indexSet in
+                        for i in indexSet{
+                            if localSetsManager.localSets[i].isPublic{
+                                localSetsManager.deleteSet(localSetsManager.localSets[i])
+                            }
+                        }
+                        localSetsManager.localSets.remove(atOffsets: indexSet)
+                        localSetsManager.updateSets()
+                        
+                    })
+                }
+                .listRowBackground(back)
+            }
+            .unifiedBackground()
+            .searchable(text: $input)
+            .navigationTitle("Library")
+            .toolbar(){
+                ToolbarItemGroup(placement: .topBarTrailing){
+                    EditButton()
+                    Button{
+                        showSheet = true
+                    }label:{
+                        Image(systemName: "plus")
+                    }
+                }
+                ToolbarItem(placement: .topBarLeading) {
+                    let tags = localSetsManager.localSets.reduce(into: Set<String>()) { result, cardSet in
+                        result.formUnion(cardSet.safeTags)
+                    }
+                    Menu{
+                        Section{
+                            Text("Filter by tags...")
+                            ForEach(Array(tags), id: \.self) { tag in
+                                Button{
+                                    if filterTags.contains(tag) {
+                                        filterTags.remove(tag)
+                                    }else{
+                                        filterTags.insert(tag)
+                                    }
+                                }label: {
+                                    HStack{
+                                        Text(tag)
+                                        if filterTags.contains(tag) {
+                                            Image(systemName: "checkmark")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        Button("Reset", role: .destructive){
+                            filterTags = []
+                        }
+                    }label: {
+                        Image(systemName: "line.3.horizontal.decrease")
+                    }
+                }
+            }
+            .refreshable {
+                load()
+            }
+            .onAppear(){
+                load()
+            }
+            
+            
+        }
+        .sheet(isPresented:$showSheet){
+            CreateSetView()
+        }
+        
+    }
+    func load(){
+        for i in localSetsManager.localSets.indices{
+            if localSetsManager.localSets[i].creator == "You"{
+                localSetsManager.localSets[i].creator = name
+            }
+        }
+        userManager.relogin()
+        localSetsManager.sync()
+    }
+}
+
+extension View {
+    /// Applies a unified background color and hides default List/Form backgrounds
+    func unifiedBackground() -> some View {
+        self
+            .scrollContentBackground(.hidden) // Works on List & Form (iOS 16+)
+            .background(bg)
+    }
+}
+
+struct RedirectSetView: View{
+    var set: SetCover
+    @Environment(SetsManager.self) var setsManager: SetsManager
+    @Environment(LocalSetsManager.self) var localSetsManager: LocalSetsManager
+    @Environment(RecentSetManager.self) var recentSetManager
+    @AppStorage("username") var name: String = "You"
+    var body: some View{
+        @Bindable var recentSetManager = recentSetManager
+        @Bindable var localSetsManager = localSetsManager
+        NavigationLink(destination: {
+            if set.creator == name {
+                if let localSetIndex = localSetsManager.localSets.firstIndex(where: { $0.id == set.id }) {
+                    LocalSetView(set: $localSetsManager.localSets[localSetIndex])
+                        .onAppear(){
+                            if recentSetManager.sets.contains(where: {$0.id==set.id}){
+                                recentSetManager.sets.removeAll(where: {$0.id==set.id})
+                            }
+                            recentSetManager.sets.append(set)
+                            print(recentSetManager.sets.map{$0.name})
+                        }
+                } else {
+                    Text("Set not found locally")
+                        .onAppear(){
+                            Task{
+                                try await localSetsManager.localSets.append(setsManager.getSet(set.id))
+                            }
+                            localSetsManager.sync()
+                        }
+                }
+            } else {
+                SetView(setID: set.id)
+                    .onAppear(){
+                        if recentSetManager.sets.contains(where: {$0.id==set.id}){
+                            recentSetManager.sets.removeAll(where: {$0.id==set.id})
+                        }
+                        recentSetManager.sets.append(set)
+                        print(recentSetManager.sets.map{$0.name})
+                    }
+            }
+        }) {
+            HStack{
+                VStack(alignment: .leading){
+                    Text(set.name)
+                        .font(.custom("AvenirNext-bold", size: 18))
+                    HStack{
+                        Text("By "+set.formattedCreator)
+                            .font(.caption)
+                        Spacer()
+                        Text(String(set.cardCount)+" terms")
+                            .font(.caption)
+                        Spacer()
+                    }
+                }
+                if set.creator == name{
+                    Image(systemName: "person.circle.fill")
+                        .padding()
+                        .foregroundStyle(accent)
+                }else if (localSetsManager.localSets.map{$0.id}.contains(set.id)){
+                    Image(systemName: "star.fill")
+                        .padding()
+                        .foregroundStyle(accent)
+                }
+            }
+            .foregroundStyle(accent)
+        }
+        .buttonStyle(.plain)
+    }
+}
