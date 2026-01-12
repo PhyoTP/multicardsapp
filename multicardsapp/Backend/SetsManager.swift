@@ -253,6 +253,9 @@ import SwiftUI
             }
         }
     }
+    var setCovers: [SetCover] {
+        localSets.map{SetCover(id: $0.id, name: $0.name, creator: $0.creator, cardCount: $0.cards.count, tags: $0.safeTags)}
+    }
 }
 
 @Observable class RecentSetManager {

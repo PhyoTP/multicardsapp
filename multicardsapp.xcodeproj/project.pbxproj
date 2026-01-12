@@ -8,10 +8,12 @@
 
 /* Begin PBXBuildFile section */
 		01C4F8F62EC306BA0090776F /* Shiny in Frameworks */ = {isa = PBXBuildFile; productRef = 01C4F8F52EC306BA0090776F /* Shiny */; };
+		01E7B6D92F001ACD0042C86E /* multicards.icon in Resources */ = {isa = PBXBuildFile; fileRef = 01E7B6D82F001ACD0042C86E /* multicards.icon */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		01C4F8AA2EC227B50090776F /* multicardsapp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = multicardsapp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		01E7B6D82F001ACD0042C86E /* multicards.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = multicards.icon; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -39,6 +41,7 @@
 			children = (
 				01C4F8AC2EC227B50090776F /* multicardsapp */,
 				01C4F8AB2EC227B50090776F /* Products */,
+				01E7B6D82F001ACD0042C86E /* multicards.icon */,
 			);
 			sourceTree = "<group>";
 		};
@@ -118,6 +121,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				01E7B6D92F001ACD0042C86E /* multicards.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -253,8 +257,9 @@
 		01C4F8B62EC227B60090776F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = multicards;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = multicardsapp/multicardsapp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = YBKKM9K8UR;
@@ -299,8 +304,9 @@
 		01C4F8B72EC227B60090776F /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = multicards;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = multicardsapp/multicardsapp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = YBKKM9K8UR;

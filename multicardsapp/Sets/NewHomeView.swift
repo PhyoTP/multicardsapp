@@ -111,7 +111,6 @@ struct NewHomeView: View{
                 }
             }
         }
-        .searchable(text: $input)
         .refreshable{
             setsManager.sets = []
             setsManager.getSets()

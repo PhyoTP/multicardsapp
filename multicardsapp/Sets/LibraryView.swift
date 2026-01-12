@@ -8,9 +8,9 @@ struct LibraryView: View{
     var covers: [SetCover]{
         var result = [SetCover]()
         if input.isEmpty{
-            result = localSetsManager.localSets.map{SetCover(id: $0.id, name: $0.name, creator: $0.creator, cardCount: $0.cards.count, tags: $0.safeTags)}
+            result = localSetsManager.setCovers
         }else{
-            result = localSetsManager.localSets.map{SetCover(id: $0.id, name: $0.name, creator: $0.creator, cardCount: $0.cards.count, tags: $0.safeTags)}.filter{$0.name.lowercased().contains(input.lowercased())}
+            result = localSetsManager.setCovers.filter{$0.name.lowercased().contains(input.lowercased())}
         }
         if !filterTags.isEmpty{
             result = result.filter({$0.tags.isSuperset(of: filterTags)})
@@ -114,6 +114,14 @@ struct LibraryView: View{
         userManager.relogin()
         localSetsManager.sync()
     }
+}
+#Preview {
+    LibraryView()
+        .preferredColorScheme(.dark)
+        .environment(UserManager())
+        .environment(LocalSetsManager())
+        .environment(SetsManager())
+        
 }
 
 extension View {
