@@ -83,11 +83,7 @@ struct Card: Codable, Identifiable, Hashable, Equatable{
     var id = UUID()
     var sides: [String: String] 
     var newSides: [Side]{
-        var tempSides: [Side] = []
-        for (i, j) in sides{
-            tempSides.append(Side(cardID: id, title: i, value: j))
-        }
-        return tempSides
+        return sides.map{(i, j) in Side(cardID: id, title: i, value: j)}
     }
 }
 struct Side: Identifiable, Hashable{

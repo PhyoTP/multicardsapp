@@ -221,3 +221,10 @@ struct SetCoverView: View{
         }
     }
 }
+#Preview{
+    NewHomeView()
+        .environment(LocalSetsManager())
+        .environment(SetsManager())
+        .environment(RecentSetManager())
+        .preferredColorScheme(.dark)
+}

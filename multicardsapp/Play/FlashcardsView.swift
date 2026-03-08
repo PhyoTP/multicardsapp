@@ -1,20 +1,29 @@
 import SwiftUI
-struct Flashcards: Options{
+struct FlashcardsOptions: Options{
     init() {}
     var shuffled = true
 }
-struct FlashcardsView: View {
+struct FlashcardsSides: Sides {
+    var sideDict: [String: [String]]
+    static let sides = ["questions", "answers"]
+}
+struct FlashcardsView: View, Game {
+    init(fullCards: [Card], options: any Options, sides: any Sides) {
+        self.fullCards = fullCards
+        self.sides = sides as? FlashcardsSides ?? FlashcardsSides()
+        self.options = options as? FlashcardsOptions ?? FlashcardsOptions()
+    }
+    
     var fullCards: [Card]
     @State private var cards: [Card] = []
-    var questions: [String]
-    var answers: [String]
     @State private var tapped = false
     @State private var rotation = 0.0
     @State private var know: [Card] = []
     @State private var dontKnow: [Card] = []
     @State private var last: [Bool] = []
     @State private var count = 0
-    var options: Flashcards
+    var options: FlashcardsOptions
+    var sides: FlashcardsSides
     var body: some View {
         GeometryReader{geometry in
             
@@ -82,7 +91,7 @@ struct FlashcardsView: View {
                             ForEach(cards.reversed()) { card in
                                 VStack{
                                     if tapped{
-                                        ForEach(answers, id: \.self){ans in
+                                        ForEach(sides.side("answers"), id: \.self){ans in
                                             VStack{
                                                 Text(ans)
                                                     .fontWeight(.medium)
@@ -96,13 +105,13 @@ struct FlashcardsView: View {
                                                     .multilineTextAlignment(.center)
                                             }
                                             .padding()
-                                            if answers.last != ans{
+                                            if sides.side("answers").last != ans{
                                                 Divider()
                                             }
                                         }
                                         
                                     }else{
-                                        ForEach(questions, id: \.self){que in
+                                        ForEach(sides.side("questions"), id: \.self){que in
                                             VStack{
                                                 Text(que)
                                                     .fontWeight(.medium)
@@ -114,7 +123,7 @@ struct FlashcardsView: View {
                                                     .multilineTextAlignment(.center)
                                             }
                                             .padding()
-                                            if questions.last != que{
+                                            if sides.side("questions").last != que{
                                                 Divider()
                                             }
                                         }
@@ -231,6 +240,6 @@ struct FlashcardsView: View {
 }
 
 #Preview {
-    FlashcardsView(fullCards: [Card(sides: ["a":"b","c":"d"])], questions: ["a"], answers: ["c"], options: Flashcards())
+    FlashcardsView(fullCards: [Card(sides: ["a":"b","c":"d"])], options: FlashcardsOptions(), sides: FlashcardsSides(sideDict: ["questions": ["a"], "answers": ["c"]]))
         .preferredColorScheme(.dark)
 }

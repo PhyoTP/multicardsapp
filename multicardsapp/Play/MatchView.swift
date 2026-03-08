@@ -1,5 +1,5 @@
 import SwiftUI
-struct Match: Options{
+struct MatchOptions: Options{
     init() {}
     var refill = false
 }
@@ -15,7 +15,7 @@ struct MatchView: View {
     @State private var count = 0
     @State private var best: TimeInterval = 0
     @State private var done = false
-    var options: Match
+    var options: MatchOptions
     var body: some View {
         if done{
             VStack{
@@ -170,6 +170,6 @@ struct MatchView: View {
     }
 }
 #Preview {
-    MatchView(questions: [Column(name: "a", values: ["b"])], answers: [Column(name: "c", values: ["d"])], options: Match())
+    MatchView(questions: [Column(name: "a", values: ["1","2","3","4","5"]), Column(name: "b", values: ["6","7","8","9","10"])], answers: [Column(name: "c", values: ["4","5","6","7","8"])], options: MatchOptions())
         .preferredColorScheme(.dark)
 }

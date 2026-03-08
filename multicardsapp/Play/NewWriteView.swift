@@ -1,19 +1,28 @@
 import SwiftUI
 
-struct NewWrite: Options{
+struct WriteOptions: Options{
     init() {}
     var caseSensitive = false
     var ignoreSpaces = true
     var shuffled = true
     var corrections = false
 }
-struct NewWriteView: View{
+struct WriteSides: Sides{
+    var sideDict: [String : [String]]
+    static let sides = ["questions", "answers"]
+}
+struct WriteView: View, Game{
+    init(fullCards: [Card], options: any Options, sides: any Sides) {
+        self.fullCards = fullCards
+        self.sides = sides as? WriteSides ?? WriteSides()
+        self.options = options as? WriteOptions ?? WriteOptions()
+    }
+    
     var fullCards: [Card]
     @State private var cards: [Card] = []
-    var questions: [String]
-    var answers: [String]
     @State private var ansInputs: [String: String] = [:]
-    var options: NewWrite
+    var options: WriteOptions
+    var sides: WriteSides
     @State private var dontKnow: [Card] = []
     @State private var showAlert = false
     @State private var alertMessage = ""
@@ -43,12 +52,14 @@ struct NewWriteView: View{
                 }
                 Spacer()
             }
+            .frame(maxWidth: .infinity)
+            .background(bg)
         }else{
             ZStack{
                 NavigationStack{
                     Form{
                         Section("Question"){
-                            ForEach(questions, id: \.self){ question in
+                            ForEach(sides.side("questions"), id: \.self){ question in
                                 HStack{
                                     Text(question+":")
                                         .fontWeight(.medium)
@@ -60,7 +71,7 @@ struct NewWriteView: View{
                         }
                         .listRowBackground(back)
                         Section("Answers"){
-                            ForEach(answers, id: \.self){answer in
+                            ForEach(sides.side("answers"), id: \.self){answer in
                                 HStack{
                                     Text(answer+":")
                                         .fontWeight(.medium)
@@ -77,7 +88,7 @@ struct NewWriteView: View{
                         if options.shuffled{
                             cards.shuffle()
                         }
-                        ansInputs = Dictionary(uniqueKeysWithValues: answers.map{($0, "")})
+                        ansInputs = Dictionary(uniqueKeysWithValues: sides.side("answers").map{($0, "")})
                     }
                     .alert("Wrong!",isPresented: $showAlert){
                         Button("Ok"){
@@ -96,15 +107,12 @@ struct NewWriteView: View{
                     }message:{
                         Text(alertMessage)
                     }
+                    .navigationTitle("Question \(fullCards.count - cards.count + 1)/\(fullCards.count)")
                     .toolbar{
-                        ToolbarItem(placement: .topBarLeading) { 
-                            Text("Question \(fullCards.count - cards.count + 1)/\(fullCards.count)")
-                                .fontWeight(.medium)
-                        }
                         ToolbarItem(placement: .topBarTrailing) { 
                             Button("Submit"){
                                 var wrong: [String] = []
-                                for i in answers{
+                                for i in sides.side("answers"){
                                     var ansInput = ansInputs[i] ?? ""
                                     var answer = cards.first?.sides[i] ?? ""
                                     if !options.caseSensitive{
@@ -144,7 +152,7 @@ struct NewWriteView: View{
                                     }
                                 }
                                 
-                                ansInputs = Dictionary(uniqueKeysWithValues: answers.map{($0, "")})
+                                ansInputs = Dictionary(uniqueKeysWithValues: sides.side("answers").map{($0, "")})
                             }
                         }
                     }
@@ -170,5 +178,6 @@ struct NewWriteView: View{
     }
 }
 #Preview{
-    NewWriteView(fullCards: [Card(sides: ["a":"b","c":"d"])], questions: ["a"], answers: ["c"], options: NewWrite())
+    WriteView(fullCards: [Card(sides: ["a":"b","c":"d"])], options: WriteOptions(), sides: WriteSides(sideDict: ["questions": ["a"], "answers": ["c"]]))
+        .preferredColorScheme(.dark)
 }
