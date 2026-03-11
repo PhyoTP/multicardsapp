@@ -1,21 +1,36 @@
 import SwiftUI
 struct MatchOptions: Options{
     init() {}
-    var refill = false
+    var refill = true
+    var amount = 4
+}
+struct MatchSides: Sides{
+    var sideDict: [String: [String]]
+    static let sides = ["sides"]
 }
 struct MatchView: View {
+    init(fullCards: [Card], options: any Options, sides: any Sides) {
+        self.fullCards = fullCards
+        self.s = sides as? MatchSides ?? MatchSides()
+        self.options = options as? MatchOptions ?? MatchOptions()
+    }
+    var fullCards: [Card]
     @State private var cards: [Card] = []
-    var questions: [Column]
-    var answers: [Column]
-    @State private var cardGrid: [[Side]] = []
-    @State private var selected: Side?
+    @State private var selectedSides: [String: String] = [:]
     @State private var startTime = Date()
     @State private var elapsedTime: TimeInterval = 0
     @State private var timer: Timer?
-    @State private var count = 0
     @State private var best: TimeInterval = 0
     @State private var done = false
     var options: MatchOptions
+    var s: MatchSides
+    var sides: [String]{
+        s.side("sides")
+    }
+    @State private var wrongSides: [String: String] = [:]
+    @State private var shuffledCards: [String: [Card]] = [:]
+    @State private var shuffledFullCards: [Card] = []
+    @State private var count = 0
     var body: some View {
         if done{
             VStack{
@@ -23,7 +38,7 @@ struct MatchView: View {
                 DonutChartView(total: elapsedTime, know: best, decimal: true)
                 Spacer()
                 Button("Try again"){
-                    resetGame()
+                    selectedSides = [:]
                     start()
                 }
                 .big()
@@ -31,92 +46,107 @@ struct MatchView: View {
             }
             .frame(maxWidth: .infinity)
             .background(bg)
+        }else if shuffledCards.isEmpty{
+            Rectangle()
+                .background(bg)
+                .onAppear{
+                    start()
+                }
         }else{
             NavigationStack{
                 ZStack{
                     bg
                         .ignoresSafeArea()
                     Grid {
-                        ForEach($cardGrid, id: \.self) { $row in
+                        GridRow{
+                            ForEach(sides, id: \.self){side in
+                                Text(side)
+                                    .fontWeight(.bold)
+                                    .minimumScaleFactor(0.1)
+                                    .padding()
+                            }
+                        }
+                        ForEach(cards.indices) { index in
                             GridRow {
-                                ForEach($row) { $side in
+                                ForEach(sides, id: \.self) { side in
+                                    let card = shuffledCards[side]?[index] ?? Card(sides: [:])
+                                    var color: Color{
+                                        if !cards.contains(card){
+                                            return .green
+                                        }
+                                        if wrongSides[side] == card.sides[side]{
+                                            return .red
+                                        }
+                                        if selectedSides[side] == card.sides[side]{
+                                            return accent.opacity(0.4)
+                                        }
+                                        return back
+                                    }
                                     Button{
-                                        if let select = selected{
-                                            if select.id == side.id{
-                                                side.color = back
-                                                print("unselect")
-                                            }else if side.cardID == select.cardID{
-                                                for i in cardGrid.indices{
-                                                    for j in cardGrid[i].indices{
-                                                        if cardGrid[i][j].cardID == select.cardID{
-                                                            cardGrid[i][j].color = .green
-                                                            withAnimation{
-                                                                cardGrid[i][j].opacity = 0
-                                                            }
-                                                            
-                                                        }
+                                        if selectedSides[side] == card.sides[side]{
+                                            selectedSides[side] = nil
+                                        }else{
+                                            selectedSides[side] = card.sides[side]
+                                            if selectedSides.count == sides.count{
+                                                print("hi")
+                                                if let correctIndex = cards.firstIndex(where: {c in
+                                                    selectedSides.allSatisfy { key, value in
+                                                        c.sides[key] == value
+                                                    }
+                                                }){
+                                                    print("correct")
+                                                    var correctCard = Card(sides: [:])
+                                                    withAnimation {
+                                                        correctCard = cards.remove(at: correctIndex)
                                                     }
                                                     
-                                                }
-                                                count+=1
-                                                
-                                                if count == cards.count{
-                                                    timer?.invalidate()
-                                                    timer = nil
-                                                    if best == 0 || elapsedTime<best{
-                                                        best = elapsedTime
-                                                        print("better")
-                                                    }
-                                                    done = true
-                                                }
-                                            }else{
-                                                
-                                                for i in cardGrid.indices{
-                                                    if let index = cardGrid[i].firstIndex(where: {$0.id == select.id}){
-                                                        side.color = .red
-                                                        
-                                                        print("found")
-                                                        cardGrid[i][index].color = .red
-                                                        withAnimation(){
-                                                            cardGrid[i][index].color = back
-                                                            side.color = back
+                                                    if options.refill && count < fullCards.count{
+                                                        cards.append(shuffledFullCards[count])
+                                                        withAnimation(.linear.delay(0.5)){
+                                                            for (s,c) in shuffledCards{
+                                                                shuffledCards[s] = c.map{$0 == correctCard ? shuffledFullCards[count] : $0}
+                                                            }
+                                                            count += 1
                                                         }
-                                                        
+                                                    }
+                                                    selectedSides = [:]
+                                                    if cards.isEmpty{
+                                                        timer?.invalidate()
+                                                        timer = nil
+                                                        if best == 0 || elapsedTime<best{
+                                                            best = elapsedTime
+                                                        }
+                                                        done = true
+                                                    }
+                                                }else{
+                                                    wrongSides = selectedSides
+                                                    print(wrongSides)
+                                                    withAnimation {
+                                                        wrongSides = [:]
                                                     }
                                                 }
-                                                print("wrong")
                                             }
-                                            selected = nil
-                                        }else{
-                                            selected = side
-                                            side.color = accent.opacity(0.4)
-                                            print("new")
                                         }
                                     }label:{
-                                        VStack{
-                                            Text(side.title)
-                                                .fontWeight(.medium)
+                                            Text(card.sides[side] ?? "")
                                                 .minimumScaleFactor(0.1)
-                                            Divider()
-                                            Text(side.value)
-                                                .minimumScaleFactor(0.1)
-                                        }
                                         .padding()
+                                        .frame(idealWidth: 100, maxWidth: .infinity, idealHeight: 140, maxHeight: .infinity)
+                                        .background(color)
+                                        .mask{
+                                            RoundedRectangle(cornerRadius: 25)
+                                        }
                                     }
-                                    .frame(minWidth: 75, idealWidth: 100, maxWidth: 150, minHeight: 140)
-                                    .background(side.color)
-                                    .mask{
-                                        RoundedRectangle(cornerRadius: 25)
-                                    }
-                                    .opacity(Double(side.opacity))
+                                    
+                                    .opacity(cards.contains(card) ? 1 : 0)
+                                    
                                 }
                             }
                         }
                     }
+                    .padding()
                     .navigationTitle(String(format: "%.1f",elapsedTime))
-                    .onAppear{
-                        start()
-                    }
+                    
                 }
             }
         }
@@ -125,7 +155,6 @@ struct MatchView: View {
         // Initialize the game state
         startTime = Date()
         elapsedTime = 0
-        count = 0
         done = false
         
         // Start the timer
@@ -135,41 +164,15 @@ struct MatchView: View {
         }
         
         // Prepare the cards and sides
-        cards = Array(prepareCards(questions: questions, answers: answers).shuffled().prefix(8))
-        cardGrid = []
-        
-        var allSides: [Side] = []
-        for card in cards {
-            allSides.append(contentsOf: card.newSides)
+        shuffledFullCards = fullCards.shuffled()
+        cards = Array(shuffledFullCards.prefix(options.amount))
+        count = options.amount
+        for side in sides {
+            shuffledCards[side] = cards.shuffled()
         }
-        
-        allSides.shuffle()
-        
-        // Dynamically create rows based on the number of sides
-        let columnsPerRow = (cards.count == 6) ? 3 : (cards.count == 8) ? 4 : 2
-        let numRows = (allSides.count + columnsPerRow - 1) / columnsPerRow
-        
-        for rowIndex in 0..<numRows {
-            let start = rowIndex * columnsPerRow
-            let end = min(start + columnsPerRow, allSides.count)
-            if start < end {
-                let row = Array(allSides[start..<end])
-                cardGrid.append(row)
-            }
-        }
-    }
-    func resetGame() {
-        // Reset the game state
-        cardGrid = []
-        selected = nil
-        startTime = Date()
-        elapsedTime = 0
-        timer?.invalidate()
-        count = 0
-        done = false
     }
 }
 #Preview {
-    MatchView(questions: [Column(name: "a", values: ["1","2","3","4","5"]), Column(name: "b", values: ["6","7","8","9","10"])], answers: [Column(name: "c", values: ["4","5","6","7","8"])], options: MatchOptions())
+    MatchView(fullCards: [Card(sides: ["a":"1","b":"4","c":"3"]), Card(sides: ["a":"3","b":"4","c":"5"]), Card(sides: ["a":"2","b":"4","c":"6"])], options: MatchOptions(), sides: MatchSides(sideDict: ["sides":["b","c"]]))
         .preferredColorScheme(.dark)
 }

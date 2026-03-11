@@ -11,7 +11,7 @@ struct WriteSides: Sides{
     var sideDict: [String : [String]]
     static let sides = ["questions", "answers"]
 }
-struct WriteView: View, Game{
+struct WriteView: View{
     init(fullCards: [Card], options: any Options, sides: any Sides) {
         self.fullCards = fullCards
         self.sides = sides as? WriteSides ?? WriteSides()

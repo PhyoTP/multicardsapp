@@ -82,18 +82,18 @@ struct CardSet: Codable, Identifiable{
 struct Card: Codable, Identifiable, Hashable, Equatable{
     var id = UUID()
     var sides: [String: String] 
-    var newSides: [Side]{
-        return sides.map{(i, j) in Side(cardID: id, title: i, value: j)}
-    }
+//    var newSides: [Side]{
+//        return sides.map{(i, j) in Side(cardID: id, title: i, value: j)}
+//    }
 }
-struct Side: Identifiable, Hashable{
-    var id = UUID()
-    var cardID: UUID
-    var title: String
-    var value: String
-    var color: Color = back
-    var opacity = 1
-}
+//struct Side: Identifiable, Hashable{
+//    var id = UUID()
+//    var cardID: UUID
+//    var title: String
+//    var value: String
+//    var color: Color = back
+//    var opacity = 1
+//}
 struct Column: Identifiable, Equatable, Hashable{
     var id = UUID()
     var name: String

@@ -7,7 +7,7 @@ struct FlashcardsSides: Sides {
     var sideDict: [String: [String]]
     static let sides = ["questions", "answers"]
 }
-struct FlashcardsView: View, Game {
+struct FlashcardsView: View {
     init(fullCards: [Card], options: any Options, sides: any Sides) {
         self.fullCards = fullCards
         self.sides = sides as? FlashcardsSides ?? FlashcardsSides()

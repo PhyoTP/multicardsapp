@@ -37,17 +37,18 @@ struct Gamemode{
     var name: String
     var icon: String
     var description: String
-    var view: any View.Type
+    var makeView: ([Card], any Options, any Sides) -> AnyView
     var options: any Options.Type
-//    var sides: any Sides.Type
+    var sides: any Sides.Type
 }
-protocol Game{
-    init(fullCards: [Card], options: Options, sides: Sides)
-}
+
 let gamemodes = [
-    Gamemode(name: "Flashcards", icon: "rectangle.stack", description: "Simple, basic flashcards", view: FlashcardsView.self, options: FlashcardsOptions.self),
-    Gamemode(name: "Match", icon: "rectangle.grid.3x2", description: "Match sides together in time", view: MatchView.self, options: MatchOptions.self),
-    Gamemode(name: "Write", icon: "rectangle.and.pencil.and.ellipsis", description: "Type out the answer", view: WriteView.self, options: WriteOptions.self)
+    Gamemode(name: "Flashcards", icon: "rectangle.stack", description: "Simple, basic flashcards", makeView: { cards, options, sides in
+        AnyView(FlashcardsView(fullCards: cards, options: options, sides: sides))}, options: FlashcardsOptions.self, sides: FlashcardsSides.self),
+    Gamemode(name: "Match", icon: "rectangle.grid.3x2", description: "Match sides together in time", makeView: { cards, options, sides in
+        AnyView(MatchView(fullCards: cards, options: options, sides: sides))}, options: MatchOptions.self, sides: MatchSides.self),
+    Gamemode(name: "Write", icon: "rectangle.and.pencil.and.ellipsis", description: "Type out the answer", makeView: { cards, options, sides in
+        AnyView(WriteView(fullCards: cards, options: options, sides: sides))}, options: WriteOptions.self, sides: WriteSides.self)
 ]
 struct NewPlayView: View{
     var cards: [Card]
@@ -56,7 +57,33 @@ struct NewPlayView: View{
     @State private var chosenGamemode = 0
     @State private var rotation = 0.0
     var sides: [String]{
-        Array(Set(cards.flatMap { $0.sides.keys }))
+        Array(Set(cards.flatMap { $0.sides.keys })).sorted()
+    }
+    func next(){
+        withAnimation {
+            rotation = -45
+        }completion: {
+            rotation = 0
+            chosenGamemode += 1
+            if chosenGamemode >= gamemodes.count{
+                chosenGamemode = 0
+            }
+            chosenSettings = gamemodes[chosenGamemode].options.init()
+            chosenSides = gamemodes[chosenGamemode].sides.init()
+        }
+    }
+    func prev(){
+        withAnimation {
+            rotation = 45
+        }completion: {
+            rotation = 0
+            chosenGamemode -= 1
+            if chosenGamemode < 0{
+                chosenGamemode = gamemodes.count - 1
+            }
+            chosenSettings = gamemodes[chosenGamemode].options.init()
+            chosenSides = gamemodes[chosenGamemode].sides.init()
+        }
     }
     var body: some View{
         NavigationStack{
@@ -65,16 +92,7 @@ struct NewPlayView: View{
                     Text("Choose a game mode").header()
                     HStack{
                         Button {
-                            withAnimation {
-                                rotation = 45
-                            }completion: {
-                                rotation = 0
-                                chosenGamemode -= 1
-                                if chosenGamemode < 0{
-                                    chosenGamemode = gamemodes.count - 1
-                                }
-                                chosenSettings = gamemodes[chosenGamemode].options.init()
-                            }
+                            prev()
                         }label:{
                             Image(systemName: "chevron.left")
                                 .font(.largeTitle)
@@ -98,10 +116,12 @@ struct NewPlayView: View{
                                     .rotation3DEffect(.degrees(45-rotation), axis: (x: 0, y: -1, z: 0))
                                     .scaleEffect(0.6+rotation/45*0.4)
                                     .offset(x: -135+abs(rotation)/45*135)
+                                    .onTapGesture(perform: prev)
                                 ModeView(mode: gamemodes[after])
                                     .rotation3DEffect(.degrees(45+rotation), axis: (x: 0, y: 1, z: 0))
                                     .scaleEffect(0.6-rotation/45*0.4)
                                     .offset(x: 135-abs(rotation)/45*135)
+                                    .onTapGesture(perform: next)
                                 ModeView(mode: gamemodes[chosenGamemode])
                                     .rotation3DEffect(.degrees(-rotation), axis: (x: 0, y: -1, z: 0))
                                     .scaleEffect(1-abs(rotation)/45*0.4)
@@ -112,17 +132,7 @@ struct NewPlayView: View{
                         }
                         Spacer()
                         Button{
-                            
-                            withAnimation {
-                                rotation = -45
-                            }completion: {
-                                rotation = 0
-                                chosenGamemode += 1
-                                if chosenGamemode >= gamemodes.count{
-                                    chosenGamemode = 0
-                                }
-                                chosenSettings = gamemodes[chosenGamemode].options.init()
-                            }
+                            next()
                         }label:{
                             Image(systemName: "chevron.right")
                                 .font(.largeTitle)
@@ -136,27 +146,9 @@ struct NewPlayView: View{
                             }
                             .onEnded{ value in
                                 if value.translation.width > 0{
-                                    withAnimation {
-                                        rotation = 45
-                                    }completion: {
-                                        rotation = 0
-                                        chosenGamemode -= 1
-                                        if chosenGamemode < 0{
-                                            chosenGamemode = gamemodes.count - 1
-                                        }
-                                        chosenSettings = gamemodes[chosenGamemode].options.init()
-                                    }
+                                    prev()
                                 }else if value.translation.width < 0{
-                                    withAnimation {
-                                        rotation = -45
-                                    }completion: {
-                                        rotation = 0
-                                        chosenGamemode += 1
-                                        if chosenGamemode >= gamemodes.count{
-                                            chosenGamemode = 0
-                                        }
-                                        chosenSettings = gamemodes[chosenGamemode].options.init()
-                                    }
+                                    next()
                                 }
                             }
                     )
@@ -167,6 +159,13 @@ struct NewPlayView: View{
                         }
                         if let _ = chosenSettings as? MatchOptions{
                             Toggle("Refill?", isOn: bindOption(options: $chosenSettings, as: MatchOptions.self).refill)
+                            HStack{
+                                Text("Card Amount:")
+                                TextField("Amount", value: bindOption(options: $chosenSettings, as: MatchOptions.self).amount, formatter: NumberFormatter())
+                                    .padding(5)
+                                    .background(.primary.opacity(0.1))
+                                    .mask(RoundedRectangle(cornerRadius: 10))
+                            }
                         }
                         if let _ = chosenSettings as? WriteOptions{
                             Toggle("Case sensitive?", isOn: bindOption(options: $chosenSettings, as: WriteOptions.self).caseSensitive)
@@ -181,23 +180,27 @@ struct NewPlayView: View{
                         HStack(alignment: .top){
                             ForEach(type(of: chosenSides).sides, id: \.self) { side in
                                 if let sideArray = chosenSides.sideDict[side]{
-                                    VStack{
-                                        Text(side.capitalized)
-                                        ForEach(sideArray, id: \.self) { s in
-                                            HStack{
-                                                Text(s)
-                                                Button("", systemImage: "xmark"){
-                                                    chosenSides.sideDict[side]!.removeAll(where: {$0 == s})
+                                    ZStack{
+                                        Rectangle()
+                                            .fill(bg.opacity(0.1))
+                                        VStack{
+                                            Text(side.capitalized)
+                                            ForEach(sideArray, id: \.self) { s in
+                                                HStack{
+                                                    Text(s)
+                                                    Button("", systemImage: "xmark"){
+                                                        chosenSides.sideDict[side]!.removeAll(where: {$0 == s})
+                                                    }
                                                 }
-                                            }
                                                 .padding(5)
                                                 .background(RoundedRectangle(cornerRadius: 10).fill(accent))
                                                 .foregroundStyle(.black)
+                                            }
                                         }
                                     }
-                                        .frame(maxWidth: .infinity)
                                         .padding()
                                         .glassEffect(in: RoundedRectangle(cornerRadius: 25))
+                                    
                                         .dropDestination(for: String.self) { items, location in
                                             chosenSides.sideDict[side]!.append(contentsOf: items.filter{!chosenSides.sideDict[side]!.contains($0) && sides.contains($0)})
                                         }
@@ -219,20 +222,18 @@ struct NewPlayView: View{
                     Text("Drag sides into the boxes")
                         .foregroundStyle(.secondary)
                         .font(.footnote)
-                    if chosenGamemode == 0{
-                        NavigationLink{
-                            FlashcardsView(fullCards: cards, options: chosenSettings as? FlashcardsOptions ?? FlashcardsOptions(), sides: chosenSides as? FlashcardsSides ?? FlashcardsSides())
-                        }label: {
-                            Label("Play", systemImage: "play.fill")
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 25)
-                                        .fill(accent)
-                                )
-                                .foregroundStyle(back)
-                        }
+                    let view = gamemodes[chosenGamemode].makeView(cards, chosenSettings, chosenSides)
+                    NavigationLink(destination: view) {
+                        Label("Play", systemImage: "play.fill")
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(
+                                RoundedRectangle(cornerRadius: 25)
+                                    .fill(accent)
+                            )
+                            .foregroundStyle(back)
                     }
+                    
                 }
                 .padding()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -266,7 +267,7 @@ struct ModeView: View{
             Text(mode.name)
         }
         .frame(width: 150, height: 150)
-//        .glassEffect(in: RoundedRectangle(cornerRadius: 25))
+//        .glassEffect(.regular.tint(back), in: RoundedRectangle(cornerRadius: 25))
         .background(
             RoundedRectangle(cornerRadius: 25)
                 .fill(back)
