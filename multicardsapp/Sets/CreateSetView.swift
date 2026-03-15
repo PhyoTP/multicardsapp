@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct CreateSetView: View {
-    @State private var set: CardSet = CardSet(name: "", cards: [Card(sides: ["": ""])], creator: "", isPublic: false, tags: [])
+    @State private var set: CardSet = CardSet(name: "", cards: [], creator: "", isPublic: false, tags: [])
     @Environment(\.dismiss) var dismiss
     @State private var showSheet = false
     @State private var columns: [Column] = [Column(name: "", values: [""]),Column(name: "", values: [""])]
@@ -52,7 +52,6 @@ struct CreateSetView: View {
                         }
                         .disabled(tagsText.isEmpty)
                     }
-                    
                 }
                 .listRowBackground(back)
                 Section(header:Text("Table"), footer:
@@ -61,7 +60,6 @@ struct CreateSetView: View {
                 }
                 ) {
                     GridView(columns: $columns)
-                    
                 }
                 .listRowBackground(back)
             }
@@ -88,11 +86,11 @@ struct CreateSetView: View {
                         } else if names.contains("") {
                             showAlert = true
                             alertDesc = "Dimension name cannot be blank"
-                        } else if numCards(columns) == 0{
+                        } else if columns.numCards == 0{
                             showAlert = true
                             alertDesc = "Must have at least one card"
                         } else {
-                            set.convertColumns(columns)
+                            set.cards = columns.cards
                             set.creator = name
                             localSetsManager.localSets.append(set)
                             dismiss()

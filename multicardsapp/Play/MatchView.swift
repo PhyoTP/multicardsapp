@@ -66,7 +66,7 @@ struct MatchView: View {
                                     .padding()
                             }
                         }
-                        ForEach(cards.indices) { index in
+                        ForEach(cards.indices, id: \.self) { index in
                             GridRow {
                                 ForEach(sides, id: \.self) { side in
                                     let card = shuffledCards[side]?[index] ?? Card(sides: [:])

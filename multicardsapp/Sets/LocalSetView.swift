@@ -33,8 +33,8 @@ struct LocalSetView: View{
                         Grid {
                             // Column Headers
                             GridRow {
-                                ForEach(set.keys(), id: \.self) { key in
-                                    if key != set.keys()[0]{
+                                ForEach(set.cards.sides, id: \.self) { key in
+                                    if key != set.cards.sides[0]{
                                         HStack{Divider()}
                                     }
                                     Text(key)
@@ -51,8 +51,8 @@ struct LocalSetView: View{
                                     Divider()
                                 }
                                 GridRow {
-                                    ForEach(set.keys(), id: \.self) { key in
-                                        if key != set.keys()[0]{
+                                    ForEach(set.cards.sides, id: \.self) { key in
+                                        if key != set.cards.sides[0]{
                                             HStack{Divider()}
                                         }
                                         Text(card.sides[key] ?? "")

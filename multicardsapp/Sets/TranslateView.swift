@@ -17,29 +17,35 @@ struct TranslateView: View {
             
             Form {
                 if let langs = languages {
-                    Picker("Translate from", selection: $sourceLanguage) {
-                        Text("Auto-detect").tag(Locale.Language?.none)
-                        ForEach(langs, id: \.self) { language in
-                            Text(language.localizedName).tag(language as Locale.Language?)
+                    Section{
+                        Picker("Translate from", selection: $sourceLanguage) {
+                            Text("Auto-detect").tag(Locale.Language?.none)
+                            ForEach(langs, id: \.self) { language in
+                                Text(language.localizedName).tag(language as Locale.Language?)
+                            }
+                        }
+                        Picker("Translate to", selection: $targetLanguage) {
+                            Text("Auto-detect").tag(Locale.Language?.none)
+                            ForEach(langs, id: \.self) { language in
+                                Text(language.localizedName).tag(language as Locale.Language?)
+                            }
                         }
                     }
-                    Picker("Translate to", selection: $targetLanguage) {
-                        Text("Auto-detect").tag(Locale.Language?.none)
-                        ForEach(langs, id: \.self) { language in
-                            Text(language.localizedName).tag(language as Locale.Language?)
+                    .listRowBackground(back)
+                }
+                Section{
+                    Picker("Source side:", selection: $sourceColumn){
+                        ForEach(columns){column in
+                            Text(column.name).tag(column)
                         }
                     }
-                }
-                Picker("Source side:", selection: $sourceColumn){
-                    ForEach(columns){column in
-                        Text(column.name).tag(column)
+                    Button("Translate") {
+                        
+                        configuration = TranslationSession.Configuration(source: sourceLanguage, target: targetLanguage)
                     }
+                    .disabled(isConverting)
                 }
-                Button("Translate") {
-                    
-                    configuration = TranslationSession.Configuration(source: sourceLanguage, target: targetLanguage)
-                }
-                .disabled(isConverting)
+                .listRowBackground(back)
             }
             .onAppear {
                 print(targetColumn)
@@ -69,6 +75,7 @@ struct TranslateView: View {
             .unifiedBackground()
             if isConverting{
                 ProgressView(value: doneCount, total: Double(targetColumn.values.count))
+                    .padding()
             }
         }
     }

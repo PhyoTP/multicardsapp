@@ -64,11 +64,11 @@ struct EditSetView: View {
                     } else if names.contains("") {
                         showAlert = true
                         alertDesc = "Dimension name cannot be blank"
-                    } else if numCards(columns) == 0{
+                    } else if columns.numCards == 0{
                         showAlert = true
                         alertDesc = "Must have at least one card"
                     } else {
-                        set.convertColumns(columns)
+                        set.cards = columns.cards
                         set.creator = name
                         dismiss()
                         localSetsManager.sync()
