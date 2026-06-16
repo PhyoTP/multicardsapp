@@ -164,8 +164,7 @@ struct WriteView: View{
                     .foregroundStyle(.green)
                     .font(.largeTitle)
                     .padding()
-                    .background(Color.gray.opacity(0.1))
-                    .mask{RoundedRectangle(cornerRadius: 25)}
+                    .glassEffect(.clear, in: RoundedRectangle(cornerRadius: 25))
                     .opacity(checkOpacity)
             }
         }
@@ -178,6 +177,6 @@ struct WriteView: View{
     }
 }
 #Preview{
-    WriteView(fullCards: [Card(sides: ["a":"b","c":"d"])], options: WriteOptions(), sides: WriteSides(sideDict: ["questions": ["a"], "answers": ["c"]]))
+    WriteView(fullCards: [Card(sides: ["a":"b","c":"d"]),Card(sides: ["a":"b","c":"d"])], options: WriteOptions(), sides: WriteSides(sideDict: ["questions": ["a"], "answers": ["c"]]))
         .preferredColorScheme(.dark)
 }

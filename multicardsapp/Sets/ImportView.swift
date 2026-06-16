@@ -6,70 +6,120 @@ struct ImportView: View{
     @State private var selectedCardSeparator: String = CardSeparator.newline.rawValue
     @Environment(\.dismiss) var dismiss
     @Binding var result: [Column]
+    @State private var hasHeader = false
+    @State private var convertError: ConvertError?
     var body: some View{
-        Form{
-            Section("Set"){
-                HStack{
-                    Text("Term Separator:")
-                    Picker("Term Separator", selection: $selectedTermSeparator) {
-                        ForEach(TermSeparator.allCases, id: \.self) { separator in
-                            Text(separator.label).tag(separator.rawValue)
+        NavigationStack{
+            Form{
+                Section("Options"){
+                    HStack{
+                        Text("Term Separator:")
+                        Picker("Term Separator", selection: $selectedTermSeparator) {
+                            ForEach(TermSeparator.allCases, id: \.self) { separator in
+                                Text(separator.label).tag(separator.rawValue)
+                            }
+                            Text("Custom").tag(TermSeparator.allCases.contains(where: { $0.rawValue == selectedTermSeparator }) ? "" : selectedTermSeparator)
                         }
-                        Text("Custom").tag(TermSeparator.allCases.contains(where: { $0.rawValue == selectedTermSeparator }) ? "" : selectedTermSeparator)
+                        .pickerStyle(SegmentedPickerStyle())
                     }
-                    .pickerStyle(SegmentedPickerStyle())
-                }
-                if selectedTermSeparator.isEmpty || !TermSeparator.allCases.contains(where: { $0.rawValue == selectedTermSeparator }) {
-                    TextField("Term Separator", text: $selectedTermSeparator)
-                }
-                HStack{
-                    Text("Card Separator:")
-                    // Picker for card separator
-                    Picker("Card Separator", selection: $selectedCardSeparator) {
-                        ForEach(CardSeparator.allCases, id: \.self) { separator in
-                            Text(separator.label).tag(separator.rawValue)
+                    if selectedTermSeparator.isEmpty || !TermSeparator.allCases.contains(where: { $0.rawValue == selectedTermSeparator }) {
+                        TextField("Term Separator", text: $selectedTermSeparator)
+                    }
+                    HStack{
+                        Text("Card Separator:")
+                        // Picker for card separator
+                        Picker("Card Separator", selection: $selectedCardSeparator) {
+                            ForEach(CardSeparator.allCases, id: \.self) { separator in
+                                Text(separator.label).tag(separator.rawValue)
+                            }
+                            Text("Custom").tag(CardSeparator.allCases.contains(where: { $0.rawValue == selectedCardSeparator }) ? "" : selectedCardSeparator)
                         }
-                        Text("Custom").tag(CardSeparator.allCases.contains(where: { $0.rawValue == selectedCardSeparator }) ? "" : selectedCardSeparator)
+                        .pickerStyle(SegmentedPickerStyle())
                     }
-                    .pickerStyle(SegmentedPickerStyle())
+                    if selectedCardSeparator.isEmpty || !CardSeparator.allCases.contains(where: { $0.rawValue == selectedCardSeparator }) {
+                        TextField("Card Separator", text: $selectedCardSeparator)
+                    }
+                    Toggle("Has headers?", isOn: $hasHeader)
                 }
-                if selectedCardSeparator.isEmpty || !CardSeparator.allCases.contains(where: { $0.rawValue == selectedCardSeparator }) {
-                    TextField("Card Separator", text: $selectedCardSeparator)
+                .listRowBackground(back)
+                Section{
+                    ZStack(alignment: .topLeading) {
+                        TextEditor(text: $text)
+                            .padding(4)
+                        
+                        if text.isEmpty {
+                            Text("\(hasHeader ? "Header a \(selectedTermSeparator) Header b \(selectedCardSeparator)":"")Term 1a \(selectedTermSeparator) Term 1b \(selectedCardSeparator)Term 2a \(selectedTermSeparator) Term 2b")
+                                .foregroundColor(Color(.placeholderText))
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 12)
+                                .allowsHitTesting(false)
+                        }
+                    }
+                }
+                .listRowBackground(back)
+            }
+            .unifiedBackground()
+            .toolbar{
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(role: .cancel) {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Import",role: .confirm){
+                        do{
+                            result=try convertStringToColumns()
+                            dismiss()
+                        }catch let e as ConvertError{
+                            convertError = e
+                        }catch{
+                            print(error.localizedDescription)
+                        }
+                    }
+                    .disabled(selectedCardSeparator.isEmpty || selectedTermSeparator.isEmpty || text.isEmpty)
                 }
             }
-            .listRowBackground(back)
-            Section{
-                TextField("Paste here", text: $text, axis: .vertical)
-                Button("Import"){
-                    result=convertStringToColumns()
-                    dismiss()
-                    
+            .alert(isPresented: Binding(
+                    get: { convertError != nil },
+                    set: { newValue in
+                        if !newValue {
+                            convertError = nil // Dismiss the alert and clear the error
+                        }
+                    }
+                ), error: convertError) {
+                    // Actions (buttons)
+                    Button("OK") {
+                    }
                 }
-                Button("Cancel", role: .destructive){
-                    dismiss()
-                }
-            }
-            .listRowBackground(back)
         }
-        .unifiedBackground()
     }
-    func convertStringToColumns() -> [Column] {
+    func convertStringToColumns() throws -> [Column] {
         // Split the string into cards based on the card separator
-        let rawCards = text.components(separatedBy: selectedCardSeparator)
+        var rawCards = text.components(separatedBy: selectedCardSeparator)
+        var headers: [String] = []
+        if hasHeader{
+            headers = rawCards.removeFirst().components(separatedBy: selectedTermSeparator).map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        }
         
+        var columnCount = headers.count
+        if columnCount == 0{
+            guard let c = rawCards.first?.components(separatedBy: selectedTermSeparator).map ({ $0.trimmingCharacters(in: .whitespacesAndNewlines) }).count else {
+                throw ConvertError.noCards
+            }
+            columnCount = c
+        }
         var columns: [Column] = []
-        var columnCount = 0
         
+        for i in 0..<columnCount {
+            columns.append(Column(name: headers.isEmpty ? "Dimension \(i + 1)": headers[i], values: []))
+        }
         for card in rawCards {
             // Split each card into terms based on the term separator
             let components = card.components(separatedBy: selectedTermSeparator).map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             
             // Ensure the columns array has enough columns to accommodate all components
-            if components.count > columnCount {
-                for i in columnCount..<components.count {
-                    columns.append(Column(name: "Dimension \(i + 1)", values: []))
-                }
-                columnCount = components.count
+            if components.count != columnCount {
+                throw ConvertError.unequalColumns
             }
             
             // Append each component to the corresponding column
@@ -80,7 +130,7 @@ struct ImportView: View{
         
         return columns
     }
-
+    
 }
 enum TermSeparator: String, CaseIterable {
     case tab = "\t"
@@ -104,3 +154,13 @@ enum CardSeparator: String, CaseIterable {
     }
 }
 
+enum ConvertError: LocalizedError{
+    case noCards
+    case unequalColumns
+    var errorDescription: String? {
+        switch self {
+        case .noCards: return "No cards found."
+        case .unequalColumns: return "Cards have an unequal number of columns."
+        }
+    }
+}

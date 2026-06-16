@@ -3,15 +3,10 @@ import SwiftUI
 struct NewHomeView: View{
     @Environment(SetsManager.self) var setsManager: SetsManager
     @Environment(LocalSetsManager.self) var localSetsManager: LocalSetsManager
-    @State private var input = ""
     @AppStorage("isLoggedIn") var isLoggedIn: Bool = false
     var filteredSets: [SetCover]{
         if let sets = setsManager.sets{
-            if input.isEmpty{
-                return Array(Set(sets).subtracting(Set(recentSetManager.sets)))
-            }else{
-                return sets.filter{$0.name.lowercased().contains(input.lowercased())}
-            }
+            return Array(Set(sets).subtracting(Set(recentSetManager.sets)))
         }else{
             return []
         }
@@ -27,7 +22,6 @@ struct NewHomeView: View{
     @AppStorage("username") var name: String = "You"
     var body: some View{
         NavigationStack{
-            if input.isEmpty{
                 ScrollView(.vertical){
                     VStack(alignment: .leading){
                         
@@ -50,33 +44,35 @@ struct NewHomeView: View{
                                 }
                             }
                         }
-                        if !recommendedSets.isEmpty{
-                            Text("For you").header()
-                            ScrollView(.horizontal){
-                                HStack{
-                                    ForEach(recommendedSets) { recommendedSet in
-                                        SetCoverView(set: recommendedSet)
-                                    }
-                                }
-                                .onAppear(){
-                                    print("reload")
-                                    recentSetManager.reload( localSetsManager: localSetsManager, setsManager: setsManager)
-                                }
-                            }
-                        }else{
-                            Text("Discover").header()
-                            ScrollView(.horizontal){
-                                if setsManager.sets == nil{
-                                    ProgressView()
-                                }else{
+                        if setsManager.errorDesc.first != "!"{
+                            if !recommendedSets.isEmpty{
+                                Text("For you").header()
+                                ScrollView(.horizontal){
                                     HStack{
-                                        ForEach(filteredSets) { filteredSet in
-                                            SetCoverView(set: filteredSet)
+                                        ForEach(recommendedSets) { recommendedSet in
+                                            SetCoverView(set: recommendedSet)
                                         }
                                     }
                                     .onAppear(){
                                         print("reload")
-                                        recentSetManager.reload(localSetsManager: localSetsManager, setsManager: setsManager)
+                                        recentSetManager.reload( localSetsManager: localSetsManager, setsManager: setsManager)
+                                    }
+                                }
+                            }else{
+                                Text("Discover").header()
+                                ScrollView(.horizontal){
+                                    if setsManager.sets == nil{
+                                        ProgressView()
+                                    }else{
+                                        HStack{
+                                            ForEach(filteredSets) { filteredSet in
+                                                SetCoverView(set: filteredSet)
+                                            }
+                                        }
+                                        .onAppear(){
+                                            print("reload")
+                                            recentSetManager.reload(localSetsManager: localSetsManager, setsManager: setsManager)
+                                        }
                                     }
                                 }
                             }
@@ -87,29 +83,7 @@ struct NewHomeView: View{
                 }
                 .navigationTitle(isLoggedIn ? "Hello, " + name : "Multicards")
                 .background(bg)
-            }else{
-                if filteredSets.isEmpty{
-                    VStack{
-                        Image(systemName: "questionmark.text.page")
-                            .font(.system(size: 60))
-                        Text("No results found, are you sure you're searching for the right thing?")
-                    }
-                    .padding()
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(bg)
-                }else{
-                    List{
-                        Section{
-                            ForEach(filteredSets) { filteredSet in
-                                RedirectSetView(set: filteredSet)
-                            }
-                        }
-                        .listRowBackground(back)
-                    }
-                    .unifiedBackground()
-                }
-            }
+            
         }
         .refreshable{
             setsManager.sets = []

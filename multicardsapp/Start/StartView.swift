@@ -5,6 +5,7 @@ struct StartView: View {
     @State private var login = false
     @State private var register = false
     @Environment(UserManager.self) var userManager: UserManager
+    @Environment(SetsManager.self) var setsManager
     @AppStorage("isDone") var done = false
     var body: some View {
         VStack {
@@ -17,12 +18,14 @@ struct StartView: View {
                 done = true
             }
             .big()
-            HStack{
-                Button("Log in") {
-                    login = true
-                }
-                Button("Sign up") {
-                    register = true
+            if setsManager.errorDesc.first != "!"{
+                HStack{
+                    Button("Log in") {
+                        login = true
+                    }
+                    Button("Sign up") {
+                        register = true
+                    }
                 }
             }
         }

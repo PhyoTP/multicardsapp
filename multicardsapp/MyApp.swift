@@ -17,27 +17,27 @@ struct MyApp: App {
                 .environment(setsManager)
                 .environment(RecentSetManager())
                 .preferredColorScheme(.dark)
-                .onOpenURL { url in
-                    if done{
-                        print("Opened from: \(url.absoluteString)")
-                        if url.host == "api.phyotp.dev" || url.host == nil{
-                            let pathComponents = url.pathComponents
-                            print(pathComponents)
-                            if pathComponents.count >= 5 && pathComponents[3] == "set"{
-                                id = UUID(uuidString: pathComponents[4]) ?? id
-                                setsManager.getSets()
-                                openSet = true
-                            }
-                        }
-                    }
-                }
-                .sheet(isPresented: $openSet) {
-                    if let localSet = $localSetsManager.localSets.first(where: {$0.id == id}){
-                        LocalSetView(set: localSet)
-                    }else{
-                        SetView(setID: id)
-                    }
-                }
+//                .onOpenURL { url in
+//                    if done{
+//                        print("Opened from: \(url.absoluteString)")
+//                        if url.host == "api.phyotp.dev" || url.host == nil{
+//                            let pathComponents = url.pathComponents
+//                            print(pathComponents)
+//                            if pathComponents.count >= 5 && pathComponents[3] == "set"{
+//                                id = UUID(uuidString: pathComponents[4]) ?? id
+//                                setsManager.getSets()
+//                                openSet = true
+//                            }
+//                        }
+//                    }
+//                }
+//                .sheet(isPresented: $openSet) {
+//                    if let localSet = $localSetsManager.localSets.first(where: {$0.id == id}){
+//                        LocalSetView(set: localSet)
+//                    }else{
+//                        SetView(setID: id)
+//                    }
+//                }
         }
     }
 }

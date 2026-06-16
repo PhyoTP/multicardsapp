@@ -1,14 +1,15 @@
 import Foundation
 import SwiftUI
 
+let baseURL = "https://api.phyotp.dev"
 @Observable class SetsManager{
     var sets: [SetCover]?
-    var errorDesc: String = "a"
+    var errorDesc: String = "!Multicards API is currently suspended until further notice."
     var recommendedSets: [SetCover]?
     
     func getSets(tags: [String] = []) {
         errorDesc = "a"
-        var urlString = "https://api.phyotp.dev/multicards/sets"
+        var urlString = baseURL + "/multicards/sets"
         if !tags.isEmpty {
             let tagString = tags.joined(separator: ",")
             urlString += "?tags=\(tagString)"
@@ -37,7 +38,7 @@ import SwiftUI
         }
     }
     func getSet(_ id: UUID) async throws -> CardSet {
-        let apiURL = URL(string: "https://api.phyotp.dev/multicards/set/" + id.uuidString)!
+        let apiURL = URL(string: baseURL + "/multicards/set/" + id.uuidString)!
         
         do {
             let (data, _) = try await URLSession.shared.data(from: apiURL)
@@ -49,7 +50,7 @@ import SwiftUI
         }
     }
     func postSet(_ set: CardSet) {
-        let apiURL = URL(string: "https://api.phyotp.dev/multicards/sets")!
+        let apiURL = URL(string: baseURL+"/multicards/sets")!
         Task {
             do {
                 var request = URLRequest(url: apiURL)
@@ -125,7 +126,7 @@ import SwiftUI
         if let token = retrieveToken() {
 //            print(token)
             
-            guard let apiURL = URL(string: "https://api.phyotp.dev/phyoid/userdata/sets") else {
+            guard let apiURL = URL(string: baseURL+"/phyoid/userdata/sets") else {
                 print("Invalid URL")
                 return
             }
@@ -174,7 +175,7 @@ import SwiftUI
     
     func updateSets() {
         if let token = retrieveToken(){
-            guard let apiURL = URL(string: "https://api.phyotp.dev/phyoid/update/sets") else {
+            guard let apiURL = URL(string: baseURL+"/phyoid/update/sets") else {
                 print("Invalid URL")
                 return
             }
@@ -200,7 +201,7 @@ import SwiftUI
     }
     func updateSet(_ set: CardSet){
         if let token = retrieveToken(){
-            guard let apiURL = URL(string: "https://api.phyotp.dev/multicards/sets/update/"+set.id.uuidString) else {
+            guard let apiURL = URL(string: baseURL+"/multicards/sets/update/"+set.id.uuidString) else {
                 print("Invalid URL")
                 return
             }
@@ -227,7 +228,7 @@ import SwiftUI
     }
     func deleteSet(_ set: CardSet){
         if let token = retrieveToken(){
-            guard let apiURL = URL(string: "https://api.phyotp.dev/multicards/sets/delete/"+set.id.uuidString) else {
+            guard let apiURL = URL(string: baseURL+"/multicards/sets/delete/"+set.id.uuidString) else {
                 print("Invalid URL")
                 return
             }

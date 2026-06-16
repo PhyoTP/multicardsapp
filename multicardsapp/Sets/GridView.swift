@@ -82,6 +82,7 @@ struct GridView: View {
         .sheet(isPresented: $showTranslateSheet, onDismiss: {selectedIndex = nil}){
             if let slindex = selectedIndex{
                 TranslateView(columns: columns, targetColumn: $columns[slindex])
+                    .presentationDetents([.medium, .large])
             }
         }
         .onChange(of: selectedIndex){

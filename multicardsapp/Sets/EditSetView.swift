@@ -10,86 +10,92 @@ struct EditSetView: View {
     @State private var tagsText = ""
     @AppStorage("username") var name: String = "You"
     var body: some View {
-        Form {
-            Section("Details") {
-                TextField("Title", text: $set.name)
-                HStack{
-                    Text("Tags: ")
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack{
-                            ForEach(Array(set.safeTags), id: \.self){tag in
-                                HStack{
-                                    Text(tag)
-                                    Button{
-                                        set.tags!.remove(tag)
-                                    }label:{
-                                        Image(systemName: "xmark")
+        NavigationStack{
+            Form {
+                Section("Details") {
+                    TextField("Title", text: $set.name)
+                    HStack{
+                        Text("Tags: ")
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack{
+                                ForEach(Array(set.safeTags), id: \.self){tag in
+                                    HStack{
+                                        Text(tag)
+                                        Button{
+                                            set.tags!.remove(tag)
+                                        }label:{
+                                            Image(systemName: "xmark")
+                                        }
                                     }
-                                }
                                     .padding(5)
                                     .background(RoundedRectangle(cornerRadius: 10).fill(accent))
                                     .foregroundStyle(.black)
-                                
+                                    
+                                }
                             }
                         }
                     }
-                }
-                HStack{
-                    TextField("Add tag", text: $tagsText)
-                    Button("Add"){
-                        if set.tags == nil{
-                            set.tags = []
+                    HStack{
+                        TextField("Add tag", text: $tagsText)
+                        Button("Add"){
+                            if set.tags == nil{
+                                set.tags = []
+                            }
+                            set.tags!.insert(tagsText)
+                            tagsText = ""
                         }
-                        set.tags!.insert(tagsText)
-                        tagsText = ""
+                        .disabled(tagsText.isEmpty)
                     }
-                    .disabled(tagsText.isEmpty)
                 }
-            }
-            .listRowBackground(back)
-            Section("Table") {
+                .listRowBackground(back)
+                Section("Table") {
+                    GridView(columns: $columns)
+                }
+                .listRowBackground(back)
+                .onAppear(){
+                    columns = set.convertToColumns()
+                }
                 
-                GridView(columns: $columns)
+                
             }
-            .listRowBackground(back)
-            .onAppear(){
-                columns = set.convertToColumns()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .alert(isPresented: $showAlert) {
+                Alert(title: Text("Error"), message: Text(alertDesc), dismissButton: .default(Text("OK")))
             }
-            Section {
-                Button("Save") {
-                    let names = columns.map { $0.name }
-                    if set.name.isEmpty {
-                        showAlert = true
-                        alertDesc = "Title cannot be blank"
-                    } else if names.contains("") {
-                        showAlert = true
-                        alertDesc = "Dimension name cannot be blank"
-                    } else if columns.numCards == 0{
-                        showAlert = true
-                        alertDesc = "Must have at least one card"
-                    } else {
-                        set.cards = columns.cards
-                        set.creator = name
+            .unifiedBackground()
+            .toolbar{
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(role: .cancel) {
                         dismiss()
-                        localSetsManager.sync()
-                        if set.isPublic{
-                            localSetsManager.updateSet(set)
-                        }
-                        
-                        
                     }
                 }
-                Button("Cancel", role: .destructive) {
-                    dismiss()
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Save", role: .confirm) {
+                        let names = columns.map { $0.name }
+                        if set.name.isEmpty {
+                            showAlert = true
+                            alertDesc = "Title cannot be blank"
+                        } else if names.contains("") {
+                            showAlert = true
+                            alertDesc = "Dimension name cannot be blank"
+                        } else if columns.numCards == 0{
+                            showAlert = true
+                            alertDesc = "Must have at least one card"
+                        } else {
+                            set.cards = columns.cards
+                            set.creator = name
+                            dismiss()
+                            localSetsManager.sync()
+                            if set.isPublic{
+                                localSetsManager.updateSet(set)
+                            }
+                            
+                            
+                        }
+                    }
                 }
             }
-            .listRowBackground(back)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .alert(isPresented: $showAlert) {
-            Alert(title: Text("Error"), message: Text(alertDesc), dismissButton: .default(Text("OK")))
-        }
-        .unifiedBackground()
     }
 }
 

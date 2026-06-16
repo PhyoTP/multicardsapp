@@ -68,7 +68,7 @@ struct LocalSetView: View{
             .toolbar(){
                 ToolbarItem(placement: .topBarTrailing){
                     NavigationLink{
-                        NewPlayView(cards: set.cards)
+                        PlayView(cards: set.cards)
                     }label: {
                         Image(systemName: "play")
                     }

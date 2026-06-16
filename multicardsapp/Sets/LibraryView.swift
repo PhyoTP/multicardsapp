@@ -62,7 +62,7 @@ struct LibraryView: View{
                 ToolbarItem(placement: .topBarLeading) {
                     let tags = localSetsManager.localSets.reduce(into: Set<String>()) { result, cardSet in
                         result.formUnion(cardSet.safeTags)
-                    }
+                    }.sorted()
                     Menu{
                         Section{
                             Text("Filter by tags...")

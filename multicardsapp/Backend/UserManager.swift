@@ -35,7 +35,7 @@ import SwiftUI
         }
     }
     func login() async throws{
-        let apiURL = URL(string: "https://api.phyotp.dev/phyoid/login")!
+        let apiURL = URL(string: baseURL+"/phyoid/login")!
         
         
         var request = URLRequest(url: apiURL)
@@ -64,7 +64,7 @@ import SwiftUI
         
     }
     func register() async throws{
-        let apiURL = URL(string: "https://api.phyotp.dev/phyoid/register")!
+        let apiURL = URL(string: baseURL+"/phyoid/register")!
         
         
         var request = URLRequest(url: apiURL)
@@ -94,7 +94,7 @@ import SwiftUI
         
     }
     func relogin(){
-        let apiURL = URL(string: "https://api.phyotp.dev/phyoid/login")!
+        let apiURL = URL(string: baseURL+"/phyoid/login")!
         Task{
             do{
                 var request = URLRequest(url: apiURL)

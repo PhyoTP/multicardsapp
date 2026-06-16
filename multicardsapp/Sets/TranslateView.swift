@@ -12,70 +12,91 @@ struct TranslateView: View {
     @State private var configuration: TranslationSession.Configuration?
     @State private var isConverting = false
     @State private var doneCount = 0.0
+    @State private var override = false
     var body: some View {
-        ZStack{
-            
-            Form {
-                if let langs = languages {
+        NavigationStack{
+            ZStack{
+                
+                Form {
+                    if let langs = languages {
+                        Section{
+                            Picker("Translate from", selection: $sourceLanguage) {
+                                Text("Auto-detect").tag(Locale.Language?.none)
+                                ForEach(langs, id: \.self) { language in
+                                    Text(language.localizedName).tag(language as Locale.Language?)
+                                }
+                            }
+                            Picker("Translate to", selection: $targetLanguage) {
+                                Text("Auto-detect").tag(Locale.Language?.none)
+                                ForEach(langs, id: \.self) { language in
+                                    Text(language.localizedName).tag(language as Locale.Language?)
+                                }
+                            }
+                        }
+                        .listRowBackground(back)
+                    }
                     Section{
-                        Picker("Translate from", selection: $sourceLanguage) {
-                            Text("Auto-detect").tag(Locale.Language?.none)
-                            ForEach(langs, id: \.self) { language in
-                                Text(language.localizedName).tag(language as Locale.Language?)
+                        Picker("Source side:", selection: $sourceColumn){
+                            ForEach(columns){column in
+                                if column != targetColumn{
+                                    Text(column.name).tag(column)
+                                }
                             }
                         }
-                        Picker("Translate to", selection: $targetLanguage) {
-                            Text("Auto-detect").tag(Locale.Language?.none)
-                            ForEach(langs, id: \.self) { language in
-                                Text(language.localizedName).tag(language as Locale.Language?)
-                            }
-                        }
+                        Toggle("Override non-empty values", isOn: $override)
                     }
                     .listRowBackground(back)
                 }
-                Section{
-                    Picker("Source side:", selection: $sourceColumn){
-                        ForEach(columns){column in
-                            Text(column.name).tag(column)
+                .onAppear {
+                    print(targetColumn)
+                    let selectableCols = columns.filter{ $0 != targetColumn }
+                    sourceColumn = selectableCols[0]
+                    Task {
+                        let avail = LanguageAvailability()
+                        languages = await avail.supportedLanguages
+                    }
+                }
+                .translationTask(configuration){session in
+                    Task { @MainActor in
+                        do {
+                            withAnimation {
+                                isConverting = true
+                            }
+                            for index in sourceColumn.values.indices{
+                                // if override continue
+                                // else if empty continue
+                                if override || targetColumn.values[index].isEmpty{
+                                    let response = try await session.translate(sourceColumn.values[index])
+                                    targetColumn.values[index] = response.targetText
+                                }
+                                doneCount += 1
+                            }
+                            print("works")
+                        } catch {
+                            print("Couldn't translate:", error)
                         }
+                        isConverting = false
+                        dismiss()
                     }
-                    Button("Translate") {
-                        
-                        configuration = TranslationSession.Configuration(source: sourceLanguage, target: targetLanguage)
-                    }
-                    .disabled(isConverting)
                 }
-                .listRowBackground(back)
-            }
-            .onAppear {
-                print(targetColumn)
-                sourceColumn = columns[0]
-                Task {
-                    let avail = LanguageAvailability()
-                    languages = await avail.supportedLanguages
-                }
-            }
-            .translationTask(configuration){session in
-                Task { @MainActor in
-                    do {
-                        isConverting = true
-                        for index in sourceColumn.values.indices{
-                            let response = try await session.translate(sourceColumn.values[index])
-                            targetColumn.values[index] = response.targetText
-                            doneCount += 1
+                .toolbar{
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Translate", role: .confirm) {
+                            
+                            configuration = TranslationSession.Configuration(source: sourceLanguage, target: targetLanguage)
                         }
-                        print("works")
-                    } catch {
-                        print("Couldn't translate:", error)
+                        .disabled(isConverting)
                     }
-                    isConverting = false
-                    dismiss()
                 }
-            }
-            .unifiedBackground()
-            if isConverting{
-                ProgressView(value: doneCount, total: Double(targetColumn.values.count))
-                    .padding()
+                .unifiedBackground()
+                if isConverting{
+                    ProgressView(value: doneCount, total: Double(targetColumn.values.count))
+                        .font(.largeTitle)
+                        .padding()
+                        .glassEffect(.clear, in: RoundedRectangle(cornerRadius: 25))
+                        .padding()
+                }
+                
             }
         }
     }
@@ -89,4 +110,5 @@ extension Locale.Language {
         return locale.localizedString(forLanguageCode: languageCode) ?? languageCode
     }
 }
+
 

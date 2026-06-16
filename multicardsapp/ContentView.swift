@@ -139,6 +139,40 @@ struct CheckOfflineView: View{
                 }
             }else if setsManager.errorDesc == "No error"{
                 EmptyView()
+            }else if setsManager.errorDesc.first == "!"{
+                HStack{
+                    Menu{
+                        Button{
+                            setsManager.getSets()
+                        }label: {
+                            Label("Retry", systemImage: "arrow.counterclockwise")
+                        }
+                        Link(destination: URL(string: "https://stats.uptimerobot.com/rX1n6yYoIp/799271942")!){
+                            Label("Check uptime", systemImage: "cellularbars")
+                        }
+                    }label: {
+                        Image(systemName: "ellipsis.circle")
+                            .padding()
+                    }
+                    
+                    Spacer()
+                    Text(setsManager.errorDesc.dropFirst())
+                        .fontWeight(.medium)
+                        .padding()
+                        .multilineTextAlignment(.center)
+                    Spacer()
+                    
+                    
+                    Button{
+                        gone = true
+                    }label: {
+                        Image(systemName: "xmark")
+                            .padding()
+                    }
+                    
+                }
+                .background(accent)
+                .foregroundStyle(.black)
             }else{
                 HStack{
                     Menu{
