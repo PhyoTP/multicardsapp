@@ -1,4 +1,5 @@
 import SwiftUI
+import NaturalLanguage
 
 struct WriteOptions: Options{
     init() {}
@@ -76,12 +77,27 @@ struct WriteView: View{
                                     Text(answer+":")
                                         .fontWeight(.medium)
                                     TextField("Answer", text: binding(for: answer))
+//                                        .onAppear(){
+//                                            if let first = cards.first, let ans = first.sides[answer]{
+//                                                let tagger = NLTagger(tagSchemes: [.lexicalClass])
+//                                                    tagger.string = ans
+//                                                let taggerOptions: NLTagger.Options = [.omitWhitespace, .omitPunctuation]
+//                                                tagger.enumerateTags(in: ans.startIndex..<ans.endIndex,
+//                                                                         unit: .word,
+//                                                                         scheme: .lexicalClass, options: taggerOptions) { tag, tokenRange in
+//                                                        let word = String(ans[tokenRange])
+//                                                        print("\(word): \(tag?.rawValue ?? "Unknown")")
+//                                                        return true
+//                                                    }
+//                                            }
+//                                        }
                                 }
                             }
                         }
                         .listRowBackground(back)
                     }
                     .onAppear(){
+                        
                         if cards.isEmpty{
                             cards = fullCards
                         }
@@ -177,6 +193,6 @@ struct WriteView: View{
     }
 }
 #Preview{
-    WriteView(fullCards: [Card(sides: ["a":"b","c":"d"]),Card(sides: ["a":"b","c":"d"])], options: WriteOptions(), sides: WriteSides(sideDict: ["questions": ["a"], "answers": ["c"]]))
+    WriteView(fullCards: [Card(sides: ["a":"b","c":"Unsaturated Fats are straight"]),Card(sides: ["a":"e","c":"The quick brown fox jumps over the lazy dog"])], options: WriteOptions(), sides: WriteSides(sideDict: ["questions": ["a"], "answers": ["c"]]))
         .preferredColorScheme(.dark)
 }

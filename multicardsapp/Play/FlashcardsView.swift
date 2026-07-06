@@ -2,6 +2,7 @@ import SwiftUI
 struct FlashcardsOptions: Options{
     init() {}
     var shuffled = true
+    var infinite = true
 }
 struct FlashcardsSides: Sides {
     var sideDict: [String: [String]]
@@ -74,7 +75,9 @@ struct FlashcardsView: View {
                         HStack{
                             Spacer()
                             Image(systemName: "arrow.left")
-                            Text(String(know.count))
+                            if !options.infinite{
+                                Text(String(know.count))
+                            }
                             Image(systemName: "checkmark.circle.fill")
                                 .foregroundStyle(.green)
                                 .font(.system(size: 30))
@@ -82,13 +85,15 @@ struct FlashcardsView: View {
                             Image(systemName: "multiply.circle.fill")
                                 .foregroundStyle(.red)
                                 .font(.system(size: 30))
-                            Text(String(dontKnow.count))
+                            if !options.infinite{
+                                Text(String(dontKnow.count))
+                            }
                             Image(systemName: "arrow.right")
                             Spacer()
                         }
-                        .navigationTitle(String(cards.count-know.count-dontKnow.count)+" left")
+                        .navigationTitle(Text(options.infinite ? "Infinite" : String(cards.count-know.count-dontKnow.count)+" left"))
                         ZStack {
-                            ForEach(cards.reversed()) { card in
+                            ForEach($cards.reversed()) { $card in
                                 VStack{
                                     if tapped{
                                         ForEach(sides.side("answers"), id: \.self){ans in
@@ -139,36 +144,37 @@ struct FlashcardsView: View {
                                     
                                         .onEnded({value in
                                             
-                                            
-                                            if value.translation.width < 0{
+                                            withAnimation(){
+                                                if (value.translation.width > 0) != tapped{
+                                                    if options.infinite{
+                                                        card.streak = max(1, Int(card.streak/2))
+                                                    }
+                                                    dontKnow.append(card)
+                                                    last.append(false)
+                                                }else{
+                                                    if options.infinite{
+                                                        card.streak += 1
+                                                    }
+                                                    know.append(card)
+                                                    last.append(true)
+                                                }
                                                 
-                                                withAnimation(){
-                                                    if tapped{
-                                                        dontKnow.append(card)
-                                                        last.append(false)
-                                                    }else{
-                                                        know.append(card)
-                                                        last.append(true)
+                                            }completion: {
+                                                if options.infinite{
+                                                    let interval = card.streak * 2 - 1
+                                                    let c = cards.remove(at: 0)
+                                                    cards.insert(c, at: min(interval, cards.count))
+                                                    withAnimation{
+                                                        if dontKnow.count > 0{
+                                                            dontKnow = []
+                                                        }else{
+                                                            know = []
+                                                        }
                                                     }
-                                                    
                                                 }
+                                            }
                                                 tapped = false
                                                 rotation = 0
-                                            }
-                                            if value.translation.width > 0{
-                                                withAnimation(){
-                                                    if tapped{
-                                                        know.append(card)
-                                                        last.append(true)
-                                                    }else{
-                                                        dontKnow.append(card)
-                                                        last.append(false)
-                                                    }
-                                                    
-                                                }
-                                                tapped = false
-                                                rotation = 0
-                                            }
                                             
                                         })
                                 )
@@ -177,15 +183,6 @@ struct FlashcardsView: View {
                                         .onEnded{
                                             withAnimation(){
                                                 rotation += 180
-                                                
-                                                
-                                                
-                                                
-                                                
-                                                
-                                                
-                                                
-                                                
                                             }
                                             tapped.toggle()
                                         }
@@ -194,23 +191,19 @@ struct FlashcardsView: View {
                                     Angle(degrees: rotation), axis: (x: 0.0, y: 1.0, z: 0.0)
                                 )
                                 .offset(x:
-                                            know.contains(where: {$0.id==card.id}) ?
-                                        tapped ?
-                                        -geometry.size.width :
+                                        know.contains(where: {$0.id==card.id}) ?
                                             -geometry.size.width
                                         :
                                             dontKnow.contains(where: {$0.id==card.id}) ?
-                                        tapped ?
-                                        geometry.size.width :
-                                            geometry.size.width
-                                        :
-                                            0
+                                                geometry.size.width
+                                            :
+                                                0
                                         
                                 )
                                 
                             }
                         }
-                        if !last.isEmpty{
+                        if !last.isEmpty && !options.infinite /* to implement */{
                             Button("Undo", systemImage: "arrow.counterclockwise") {
                                 withAnimation {
                                     if last.last == true && !know.isEmpty {
@@ -240,6 +233,6 @@ struct FlashcardsView: View {
 }
 
 #Preview {
-    FlashcardsView(fullCards: [Card(sides: ["a":"b","c":"d"])], options: FlashcardsOptions(), sides: FlashcardsSides(sideDict: ["questions": ["a"], "answers": ["c"]]))
+    FlashcardsView(fullCards: [Card(sides: ["a":"1","c":"2"]),Card(sides: ["a":"3","c":"4"]),Card(sides: ["a":"5","c":"6"]),Card(sides: ["a":"7","c":"8"]),Card(sides: ["a":"9","c":"10"]),Card(sides: ["a":"11","c":"12"]),Card(sides: ["a":"13","c":"14"]),Card(sides: ["a":"15","c":"16"])], options: FlashcardsOptions(), sides: FlashcardsSides(sideDict: ["questions": ["a"], "answers": ["c"]]))
         .preferredColorScheme(.dark)
 }

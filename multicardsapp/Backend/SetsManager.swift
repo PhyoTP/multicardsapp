@@ -111,9 +111,10 @@ let baseURL = "https://api.phyotp.dev"
     func load() {
         let archiveURL = getArchiveURL()
         let propertyListDecoder = PropertyListDecoder()
-        if let retrievedlocalSetsData = try? Data(contentsOf: archiveURL),
-           let localSetsDecoded = try? propertyListDecoder.decode([CardSet].self, from: retrievedlocalSetsData) {
-            localSets = localSetsDecoded
+        if let retrievedlocalSetsData = try? Data(contentsOf: archiveURL){
+            if let localSetsDecoded = try? propertyListDecoder.decode([CardSet].self, from: retrievedlocalSetsData) {
+                localSets = localSetsDecoded
+            }
         }
         
         

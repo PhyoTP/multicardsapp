@@ -60,10 +60,27 @@ struct CardSet: Codable, Identifiable{
 
 struct Card: Codable, Identifiable, Hashable, Equatable{
     var id = UUID()
-    var sides: [String: String] 
-//    var newSides: [Side]{
-//        return sides.map{(i, j) in Side(cardID: id, title: i, value: j)}
-//    }
+    var sides: [String: String]
+    var streak = 0
+    enum CodingKeys: String, CodingKey {
+        case id
+        case sides
+        case streak
+    }
+
+    init(id: UUID = UUID(), sides: [String: String], streak: Int = 0) {
+        self.id = id
+        self.sides = sides
+        self.streak = streak
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        sides = try container.decode([String: String].self, forKey: .sides)
+        streak = try container.decodeIfPresent(Int.self, forKey: .streak) ?? 0
+    }
 }
 //struct Side: Identifiable, Hashable{
 //    var id = UUID()
